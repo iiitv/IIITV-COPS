@@ -1,22 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
-import EventBox from "../../components/ui/EventBox";
-import { getPublicUrl } from "@/lib/utils";
-function Page() {
+import React, { useState ,useEffect } from "react";
+import { useRouter } from "next/navigation";
+import "./styles.css"
+import Loader from "@/components/ui/loader";
+import EventCard from "./components/eventCard"
+
+import { Montserrat, Alata } from "next/font/google";
+const montserratFont = Montserrat({
+  weight: ["100", "200", "400", "600"],
+  subsets: ["latin"],
+});
+const alataFont = Alata({ weight: ["400"], subsets: ["latin"] });
+
+export default function Events() {
+  const router = useRouter();
   const [events, setEvents] = useState([]);
   const [nextPageEvents, setNextPageEvents] = useState([]);
   const [pageCount, setPageCount] = useState(1);
-  const [hasMoreEvents, setHasMoreEvents] = useState(true);
-  const [columnCount, setColumnCount] = useState(3);
+  const [hasMoreEvents, setHasMoreEvents] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const fetchEvents = async (page) => {
     try {
+      setHasMoreEvents(false);
+      setLoading(true); 
       const response = await fetch(`/api/v1/get/events?page=${page}`);
       const data = await response.json();
       return data;
     } catch (error) {
       console.error("Error fetching events:", error);
       return [];
+    }
+    finally {
+      setHasMoreEvents(true);
+      setLoading(false);
     }
   };
 
@@ -44,69 +61,48 @@ function Page() {
         setHasMoreEvents(false);
       }
     };
-
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setColumnCount(2);
-      } else {
-        setColumnCount(3);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    handleResize();
     loadInitialEvents();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
-
-  const columns = Array.from({ length: columnCount }, () => []);
-
-  events.forEach((event, index) => {
-    let posterUrl = getPublicUrl(`/events/${event.id}/poster`);
-
-    columns[index % columnCount].push(
-      <EventBox
-        img={posterUrl}
-        key={event.id}
-        caption={event.description}
-        time={event.date}
-        category={event.name}
-        hostLink={event.host_link}
-      />,
-    );
-  });
+    }, []);
 
   return (
-    <div className="flex flex-col w-full h-full">
-      <div className="self-center h-fit py-2 w-11/12 flex flex-col bg-[#201f31] mt-4">
-        <p className="md:pl-12 pt-5 text-2xl font-medium mb-7 ">Events Near</p>
-        <div className="self-center w-full grid grid-flow-row grid-cols-2 md:grid-cols-3">
-          {columns.map((column, colIndex) => (
-            <section
-              key={colIndex}
-              className={`h-fit w-full gap-8 py-4 grid grid-flow-row md:pl-12 ${
-                colIndex === 1 && columnCount === 3 ? "mt-32" : ""
-              }
-              ${colIndex === 1 && columnCount === 2 ? "mt-20" : ""}`}
-            >
-              {column}
-            </section>
+    <div className="w-full flex justify-center mt-6">
+      <div className="w-[95%]">
+        <p className={`underline text-3xl ml-4 ${alataFont.className}`}>
+          Events
+        </p>
+        <div className="grid lg:grid-cols-3 gap-8 px-4 mt-6 sm:grid-cols-2 grid-cols-1 grid-rows-1">
+          {/* Static Quote Box in 2nd column, 1st row */}
+          <div className="h-full lg:col-start-2 lg:col-span-1 lg:row-start-1 lg:row-span-1 sm:col-span-2 col-span-1 p-4 bg-gray-700 rounded-2xl flex items-center justify-center text-white text-center">
+            Random image or quote
+          </div>
+
+          {events.map((event, index) => (
+            <EventCard event={event} key={index}/>
           ))}
         </div>
-        {hasMoreEvents && (
-          <button
-            onClick={getMoreEvents}
-            className="text-sm md:text-xl hover:border-[#e890bd] text-[#FFBADE] border-[#FFBADE] border-[0.5vh] w-fit px-24 md:px-32  active:scale-95 transition-all duration-100 self-center rounded-3xl py-3"
+
+        {loading ? (
+          <div className="w-full flex justify-center p-12">
+            <p className={`text-xl px-5 ${montserratFont.className}`}>
+              Loading...{" "}
+            </p>
+            <Loader />
+          </div>
+        ) : (
+          hasMoreEvents && (
+            <div
+            className={`${montserratFont.className} w-full flex justify-center my-10`}
           >
-            Show More
-          </button>
+            <button
+              className="show-more-button"
+              onClick={getMoreEvents}
+            >
+              <p>Show More</p>
+            </button>
+          </div>
+          )
         )}
       </div>
     </div>
   );
 }
-
-export default Page;
