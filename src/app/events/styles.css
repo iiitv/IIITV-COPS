@@ -1,0 +1,30 @@
+.show-more-button{
+
+    box-sizing: border-box;
+    width: 300px;
+    height: 45px;
+    
+    background-color : color-mix(in srgb, var(--primary) 5%, transparent);
+    box-shadow:  color-mix(in srgb, #fff 5%, transparent) 1px 1px 15px;
+    border: solid color-mix(in srgb, var(--primary) 20%, transparent) 1px;
+    border-radius: 43px;
+    
+    transition: 0.5s;
+}
+.show-more-button:hover{
+    background-color : color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+}
+.show-more-button>p{
+    font-weight: 700;
+    font-size: 18px;
+
+    color: var(--primary);
+}
+
+@media screen and (max-width : 1024px){
+    .show-more-button{
+
+        box-sizing: border-box;
+        width: 200px;
+    }
+}
