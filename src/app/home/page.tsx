@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -9,6 +9,9 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+
+import axios from "axios";
+
 // import { HeroParallax } from "./components/hero-parallax"
 
 import Image from "next/image";
@@ -109,7 +112,69 @@ import Image from "next/image";
 //   },
 // ];
 
+interface Event {
+  id: number;
+  name: string;
+  description: string;
+  date: string;
+  time: string;
+  mode: string;
+}
+
 export default function Home() {
+  type EventCategory = "upcoming" | "past" | "ongoing";
+  const [events, setEvents] = useState<{
+    upcoming: Event[];
+    past: Event[];
+    ongoing: Event[];
+  }>({
+    upcoming: [],
+    past: [],
+    ongoing: [],
+  });
+  const [displayedEvents, setDisplayedEvents] = useState<Event[]>([]);
+  const [selectedCategory, setSelectedCategory] =
+    useState<EventCategory>("upcoming");
+
+  // Fetch events once on component mount
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const [upcomingRes, pastRes, ongoingRes] = await Promise.all([
+          axios.get("/api/v1/get/events?category=upcoming"),
+          axios.get("/api/v1/get/events?category=past"),
+          axios.get("/api/v1/get/events?category=ongoing"),
+        ]);
+
+        setEvents({
+          upcoming: upcomingRes.data.slice(0, 3),
+          past: pastRes.data.slice(0, 3),
+          ongoing: ongoingRes.data.slice(0, 3),
+        });
+
+        // Default displayed events to "upcoming"
+        setDisplayedEvents(upcomingRes.data.slice(0, 3));
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+    }
+
+    fetchEvents();
+  }, []);
+
+  // Handle category toggle
+  const handleCategoryChange = (category: EventCategory) => {
+    setSelectedCategory(category);
+    setDisplayedEvents(events[category]);
+  };
+
+  // Category titles for dynamic title display
+  const categoryTitles: { [key in EventCategory]: string } = {
+    upcoming: "Upcoming ",
+    past: "Past ",
+    ongoing: "Ongoing ",
+  };
+
   return (
     <div className="flex flex-col min-h-dvh">
       {/* <HeroParallax products={products} /> */}
@@ -177,132 +242,76 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section className="w-full py-12 md:py-24 lg:py-32 flex item-center justify-center bg-secondary">
+      <section className="w-full py-12 md:py-24 lg:py-24 flex item-center justify-center bg-secondary">
         <div className="container px-4 md:px-6 space-y-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                Upcoming <span className="text-primary">Events</span>
-              </h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Check out our upcoming events and workshops to learn new skills,
-                network with fellow coders, and have fun!
-              </p>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+              {categoryTitles[selectedCategory]}
+              <span className="text-primary">Events</span>
+            </h2>
+            <div className="flex gap-4">
+              {(["upcoming", "ongoing", "past"] as EventCategory[]).map(
+                (category) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryChange(category)}
+                    className={` px-2 py-1 md:px-4 md:py-2 rounded-md ${
+                      selectedCategory === category
+                        ? "bg-primary text-secondary text-sm sm:text-base"
+                        : "bg-secondary text-sm sm:text-base border hover:bg-muted hover:text-secondary transition duration-250"
+                    }`}
+                  >
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </button>
+                ),
+              )}
             </div>
+            <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              Check out our events and workshops to learn new skills, network
+              with fellow coders, and have fun!
+            </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle>Intro to React Workshop</CardTitle>
-                <CardDescription>
-                  Learn the fundamentals of React.js in this hands-on workshop.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      June 15, 2024
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ClockIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      6:00 PM - 8:00 PM
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LocateIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Online</p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link
-                  href="#"
-                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  prefetch={false}
-                >
-                  Register
-                </Link>
-              </CardFooter>
-            </Card>
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle>Hackathon: Build a Web App</CardTitle>
-                <CardDescription>
-                  Join our 24-hour hackathon and build a web application from
-                  scratch.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      July 20-21, 2024
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ClockIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      9:00 AM - 9:00 AM
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LocateIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Online</p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link
-                  href="#"
-                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  prefetch={false}
-                >
-                  Register
-                </Link>
-              </CardFooter>
-            </Card>
-            <Card className="flex flex-col">
-              <CardHeader>
-                <CardTitle>Intro to Data Structures</CardTitle>
-                <CardDescription>
-                  Dive into the fundamentals of data structures and algorithms.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      August 5, 2024
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ClockIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      7:00 PM - 9:00 PM
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <LocateIcon className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Online</p>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link
-                  href="#"
-                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                  prefetch={false}
-                >
-                  Register
-                </Link>
-              </CardFooter>
-            </Card>
+
+          <div className="lg:flex grid gap-6 lg:justify-center sm:grid-cols-2 lg:grid-cols-3">
+          {displayedEvents.length > 0 ? (
+              displayedEvents.map((event) => (
+                <Card key={event.id} className="lg:w-1/3 w-full flex flex-col">
+                  <CardHeader>
+                    <CardTitle>{event.name}</CardTitle>
+                    <CardDescription>{event.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1">
+                    <div className="grid gap-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{formatDate(event.date)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ClockIcon className="h-5 w-5 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{formatTime(event.time)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <LocateIcon className="h-5 w-5 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">{event.mode?"Online":"Offline"}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Link
+                      href={`/event/${event.id}`}
+                      className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                      prefetch={false}
+                    >
+                      Register
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <div className="w-full col-span-5 content-center justify-center flex py-20 lg:pt-16 lg:pb-44">
+                <p className="text-center sm:text-xl">No <span className="text-primary">{selectedCategory}</span> events available. Check back soon for future updates.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -473,6 +482,35 @@ export default function Home() {
     </div>
   );
 }
+
+function formatDate(dateString: string): string {
+  const [year, month, day] = dateString.split("-");
+  const date = new Date(Number(year), Number(month) - 1, Number(day)); // Month is 0-indexed
+
+  const formattedDay = date.getDate();
+  const monthName = date.toLocaleString("default", { month: "long" });
+  const formattedYear = date.getFullYear();
+
+  return `${formattedDay} ${monthName} ${formattedYear}`;
+}
+
+const formatTime = (timeString: string): string => {
+  const timeRegex = /^(\d{2}):(\d{2}):(\d{2})$/;
+  const match = timeString.match(timeRegex);
+  if (!match) {
+    return 'Invalid Time Format';
+  }
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // Handle midnight (0 becomes 12)
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  
+  return `${hours}:${formattedMinutes} ${ampm}`;
+};
+
 
 function LaptopIcon(
   props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>,
